@@ -149,9 +149,7 @@ class URL:
         return self._url
 
     def __repr__(self) -> str:
-        url = str(self)
-        if self.password:
-            url = str(self.replace(password="********"))
+        url = str(self.replace(password="********")) if self.password else str(self)
         return f"{self.__class__.__name__}({repr(url)})"
 
 
@@ -162,7 +160,7 @@ class URLPath(str):
     """
 
     def __new__(cls, path: str, protocol: str = "", host: str = "") -> "URLPath":
-        assert protocol in ("http", "websocket", "")
+        assert protocol in {"http", "websocket", ""}
         return str.__new__(cls, path)
 
     def __init__(self, path: str, protocol: str = "", host: str = "") -> None:
@@ -263,7 +261,7 @@ class ImmutableMultiDict(typing.Mapping):
             )
             _items = list(value)
 
-        self._dict = {k: v for k, v in _items}
+        self._dict = dict(_items)
         self._list = _items
 
     def getlist(self, key: typing.Any) -> typing.List[typing.Any]:
@@ -282,9 +280,7 @@ class ImmutableMultiDict(typing.Mapping):
         return list(self._list)
 
     def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
-        if key in self._dict:
-            return self._dict[key]
-        return default
+        return self._dict[key] if key in self._dict else default
 
     def __getitem__(self, key: typing.Any) -> str:
         return self._dict[key]
@@ -405,8 +401,7 @@ class QueryParams(ImmutableMultiDict):
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        query_string = str(self)
-        return f"{class_name}({query_string!r})"
+        return f'{class_name}({self!r})'
 
 
 class UploadFile:
@@ -552,10 +547,9 @@ class Headers(typing.Mapping[str, str]):
 
     def __contains__(self, key: typing.Any) -> bool:
         get_header_key = key.lower().encode("latin-1")
-        for header_key, header_value in self._list:
-            if header_key == get_header_key:
-                return True
-        return False
+        return any(
+            header_key == get_header_key for header_key, header_value in self._list
+        )
 
     def __iter__(self) -> typing.Iterator[typing.Any]:
         return iter(self.keys())
@@ -585,10 +579,11 @@ class MutableHeaders(Headers):
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
 
-        found_indexes = []
-        for idx, (item_key, item_value) in enumerate(self._list):
-            if item_key == set_key:
-                found_indexes.append(idx)
+        found_indexes = [
+            idx
+            for idx, (item_key, item_value) in enumerate(self._list)
+            if item_key == set_key
+        ]
 
         for idx in reversed(found_indexes[1:]):
             del self._list[idx]
@@ -605,10 +600,11 @@ class MutableHeaders(Headers):
         """
         del_key = key.lower().encode("latin-1")
 
-        pop_indexes = []
-        for idx, (item_key, item_value) in enumerate(self._list):
-            if item_key == del_key:
-                pop_indexes.append(idx)
+        pop_indexes = [
+            idx
+            for idx, (item_key, item_value) in enumerate(self._list)
+            if item_key == del_key
+        ]
 
         for idx in reversed(pop_indexes):
             del self._list[idx]
@@ -625,7 +621,7 @@ class MutableHeaders(Headers):
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
 
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for item_key, item_value in self._list:
             if item_key == set_key:
                 return item_value.decode("latin-1")
         self._list.append((set_key, set_value))

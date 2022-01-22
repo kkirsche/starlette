@@ -74,7 +74,8 @@ class Response:
         if (
             body is not None
             and populate_content_length
-            and not (self.status_code < 200 or self.status_code in (204, 304))
+            and self.status_code >= 200
+            and self.status_code not in (204, 304)
         ):
             content_length = str(len(body))
             raw_headers.append((b"content-length", content_length.encode("latin-1")))
